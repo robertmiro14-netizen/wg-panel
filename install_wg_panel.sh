@@ -28,8 +28,6 @@ WG_NET="10.8.0"
 SERVER_WG_IP="${WG_NET}.1"
 SUBNET="24"
 DNS="1.1.1.1,8.8.8.8"
-PANEL_PASS=""
-
 echo -e "${BOLD}${CYAN}"
 echo "  ██╗    ██╗ ██████╗     ██████╗  █████╗ ███╗   ██╗███████╗██╗     "
 echo "  ██║    ██║██╔════╝     ██╔══██╗██╔══██╗████╗  ██║██╔════╝██║     "
@@ -46,18 +44,7 @@ SERVER_IP=$(curl -s --max-time 5 https://api.ipify.org || \
             curl -s --max-time 5 https://ifconfig.me  || \
             hostname -I | awk '{print $1}')
 info "Публичный IP сервера: ${BOLD}${SERVER_IP}${NC}"
-
-# ─── Запрос пароля для панели ───────────────────────────────
-echo ""
-while [[ -z "$PANEL_PASS" ]]; do
-    read -rsp "  Введите пароль для веб-панели: " PANEL_PASS
-    echo ""
-    if [[ ${#PANEL_PASS} -lt 6 ]]; then
-        warn "Пароль должен быть минимум 6 символов"
-        PANEL_PASS=""
-    fi
-done
-success "Пароль установлен"
+info "Пароль панели будет задан при первом заходе в браузере"
 
 # ─── 1. Обновление системы и установка зависимостей ─────────
 info "Обновление пакетов..."
@@ -159,27 +146,47 @@ cat > server.js <<'SERVERJS'
 'use strict';
 const express       = require('express');
 const session       = require('express-session');
-const { execSync, exec } = require('child_process');
+const { execSync }  = require('child_process');
 const fs            = require('fs');
 const path          = require('path');
 const QRCode        = require('qrcode');
+const crypto        = require('crypto');
 
-const app        = express();
-const WG_DIR     = '/etc/wireguard';
-const WG_IFACE   = 'wg0';
-const PANEL_PASS = process.env.PANEL_PASS || 'changeme';
-const WEB_PORT   = parseInt(process.env.WEB_PORT || '8080');
-const SERVER_IP  = process.env.SERVER_IP  || '0.0.0.0';
-const SERVER_PUB = fs.readFileSync(path.join(WG_DIR, 'server_public.key'), 'utf8').trim();
-const DNS        = process.env.WG_DNS || '1.1.1.1, 8.8.8.8';
-const WG_PORT    = parseInt(process.env.WG_PORT || '51820');
-const WG_NET     = process.env.WG_NET || '10.8.0';
+const app         = express();
+const WG_DIR      = '/etc/wireguard';
+const WG_IFACE    = 'wg0';
+const PANEL_DIR   = '/opt/wg-panel';
+const PASS_FILE   = path.join(PANEL_DIR, '.password');
+const SECRET_FILE = path.join(PANEL_DIR, '.session_secret');
+const WEB_PORT    = parseInt(process.env.WEB_PORT || '8080');
+const SERVER_IP   = process.env.SERVER_IP  || '0.0.0.0';
+const SERVER_PUB  = fs.readFileSync(path.join(WG_DIR, 'server_public.key'), 'utf8').trim();
+const DNS         = process.env.WG_DNS || '1.1.1.1, 8.8.8.8';
+const WG_PORT     = parseInt(process.env.WG_PORT || '51820');
+const WG_NET      = process.env.WG_NET || '10.8.0';
+
+// ── Постоянный секрет сессии ─────────────────────────────────
+let SESSION_SECRET;
+if (fs.existsSync(SECRET_FILE)) {
+  SESSION_SECRET = fs.readFileSync(SECRET_FILE, 'utf8').trim();
+} else {
+  SESSION_SECRET = crypto.randomBytes(32).toString('hex');
+  fs.writeFileSync(SECRET_FILE, SESSION_SECRET, { mode: 0o600 });
+}
+
+// ── Функции пароля ───────────────────────────────────────────
+function getPassword() {
+  if (!fs.existsSync(PASS_FILE)) return null;
+  const p = fs.readFileSync(PASS_FILE, 'utf8').trim();
+  return p.length > 0 ? p : null;
+}
+function isSetupDone() { return getPassword() !== null; }
 
 // ── Middleware ──────────────────────────────────────────────
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(session({
-  secret: PANEL_PASS + '_session_secret',
+  secret: SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
   cookie: { maxAge: 86400000 }
@@ -187,6 +194,7 @@ app.use(session({
 
 // ── Auth middleware ─────────────────────────────────────────
 function auth(req, res, next) {
+  if (!isSetupDone()) return res.redirect('/setup');
   if (req.session.loggedIn) return next();
   res.redirect('/login');
 }
@@ -392,8 +400,51 @@ ${nav}
 // ROUTES
 // ══════════════════════════════════════════════════════════════
 
+// ── Setup (первый запуск) ────────────────────────────────────
+app.get('/setup', (req, res) => {
+  if (isSetupDone()) return res.redirect('/login');
+  const flash = req.query.err
+    ? `<div class="alert alert-error">${decodeURIComponent(req.query.err)}</div>` : '';
+  res.send(html('Настройка', `
+    <div class="login-wrap">
+      <div class="login-card">
+        <div class="login-logo">🔐</div>
+        <div class="login-title">Первая настройка</div>
+        <div class="login-sub">Придумайте пароль для входа в панель управления</div>
+        ${flash}
+        <form method="POST" action="/setup">
+          <div class="form-group">
+            <label>Пароль (мин. 6 символов)</label>
+            <input type="password" name="password" autofocus placeholder="Введите пароль" id="pass1">
+          </div>
+          <div class="form-group">
+            <label>Подтвердите пароль</label>
+            <input type="password" name="confirm" placeholder="Повторите пароль" id="pass2">
+          </div>
+          <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:.5rem">
+            Установить пароль и войти →
+          </button>
+        </form>
+      </div>
+    </div>`, false));
+});
+
+app.post('/setup', (req, res) => {
+  if (isSetupDone()) return res.redirect('/login');
+  const pass    = (req.body.password || '').trim();
+  const confirm = (req.body.confirm  || '').trim();
+  if (pass.length < 6)
+    return res.redirect('/setup?err=' + encodeURIComponent('Пароль должен быть минимум 6 символов'));
+  if (pass !== confirm)
+    return res.redirect('/setup?err=' + encodeURIComponent('Пароли не совпадают'));
+  fs.writeFileSync(PASS_FILE, pass, { mode: 0o600 });
+  req.session.loggedIn = true;
+  res.redirect('/?msg=' + encodeURIComponent('Пароль установлен! Добро пожаловать'));
+});
+
 // ── Логин ───────────────────────────────────────────────────
 app.get('/login', (req, res) => {
+  if (!isSetupDone()) return res.redirect('/setup');
   if (req.session.loggedIn) return res.redirect('/');
   const flash = req.query.err
     ? `<div class="alert alert-error">Неверный пароль</div>` : '';
@@ -418,7 +469,7 @@ app.get('/login', (req, res) => {
 });
 
 app.post('/login', (req, res) => {
-  if (req.body.password === PANEL_PASS) {
+  if (req.body.password === getPassword()) {
     req.session.loggedIn = true;
     res.redirect('/');
   } else {
@@ -741,7 +792,6 @@ WorkingDirectory=${PANEL_DIR}
 ExecStart=/usr/bin/node ${PANEL_DIR}/server.js
 Restart=on-failure
 RestartSec=5
-Environment="PANEL_PASS=${PANEL_PASS}"
 Environment="WEB_PORT=${WEB_PORT}"
 Environment="SERVER_IP=${SERVER_IP}"
 Environment="WG_PORT=${PANEL_PORT}"
@@ -767,12 +817,12 @@ echo -e "${BOLD}${GREEN}║        УСТАНОВКА ЗАВЕРШЕНА        
 echo -e "${BOLD}${GREEN}╚══════════════════════════════════════════╝${NC}"
 echo ""
 echo -e "  ${BOLD}Веб-панель:${NC}      http://${SERVER_IP}:${WEB_PORT}"
-echo -e "  ${BOLD}Пароль:${NC}          ${PANEL_PASS}"
 echo -e "  ${BOLD}WireGuard:${NC}       ${WG_ST}"
-echo -e "  ${BOLD}Веб-панель:${NC}      ${PANEL_ST}"
+echo -e "  ${BOLD}Панель:${NC}          ${PANEL_ST}"
 echo ""
 echo -e "  ${CYAN}Логи панели:${NC}  journalctl -u wg-panel -f"
 echo -e "  ${CYAN}Логи WG:${NC}      journalctl -u wg-quick@${WG_IFACE} -f"
 echo ""
 echo -e "  ${YELLOW}Откройте в браузере:${NC} http://${SERVER_IP}:${WEB_PORT}"
+echo -e "  ${GREEN}При первом входе установите свой пароль${NC}"
 echo ""
