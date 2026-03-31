@@ -1,1 +1,231 @@
-<html></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Vol WG Panel</title>
+<style>
+:root{--red:#c0392b;--red2:#e74c3c;--bg:#eef1f7;--card:#fff;--text:#1a1a2e;--muted:#8492a6;--border:#e8ecf1}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+header{background:linear-gradient(135deg,#1a1a2e 0%,#16213e 60%,#0f3460 100%);padding:0 28px;height:64px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 16px rgba(0,0,0,.25);position:sticky;top:0;z-index:10}
+.logo{display:flex;align-items:center;gap:12px}
+.logo-box{width:38px;height:38px;background:linear-gradient(135deg,var(--red),var(--red2));border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.logo-box svg{width:20px;height:20px;fill:none;stroke:#fff;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.logo-text{color:#fff;font-size:17px;font-weight:700;letter-spacing:.2px}
+.logo-sub{font-size:11px;color:rgba(255,255,255,.45);display:block;font-weight:400}
+.header-right{display:flex;align-items:center;gap:12px}
+.logout{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);color:rgba(255,255,255,.75);padding:7px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;transition:all .2s;text-decoration:none}
+.logout:hover{background:rgba(255,255,255,.14);color:#fff}
+main{max-width:960px;margin:28px auto;padding:0 20px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:22px}
+.stat{background:var(--card);border-radius:14px;padding:18px 22px;box-shadow:0 2px 8px rgba(0,0,0,.05);border:1px solid var(--border)}
+.stat-val{font-size:30px;font-weight:700;color:var(--text)}
+.stat-label{font-size:12px;color:var(--muted);margin-top:3px;font-weight:500}
+.section{background:var(--card);border-radius:16px;box-shadow:0 2px 12px rgba(0,0,0,.06);border:1px solid var(--border);overflow:hidden}
+.section-head{padding:18px 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
+.section-title{font-size:16px;font-weight:700;color:var(--text)}
+.btn-new{display:flex;align-items:center;gap:7px;background:linear-gradient(135deg,var(--red),var(--red2));color:#fff;border:none;padding:9px 18px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;transition:opacity .2s}
+.btn-new:hover{opacity:.87}
+.btn-new svg{width:14px;height:14px;fill:none;stroke:#fff;stroke-width:3;stroke-linecap:round}
+#client-list{list-style:none}
+.ci{display:flex;align-items:center;gap:14px;padding:15px 24px;border-bottom:1px solid var(--border);transition:background .15s}
+.ci:last-child{border-bottom:none}
+.ci:hover{background:#fafbfc}
+.av{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#dfe6e9,#b2bec3);display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative}
+.av svg{width:20px;height:20px}
+.dot{position:absolute;bottom:1px;right:1px;width:11px;height:11px;border-radius:50%;border:2px solid #fff;background:#b2bec3}
+.dot.on{background:#2ecc71}
+.ci-info{flex:1;min-width:0}
+.ci-name{font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ci-meta{font-size:12px;color:var(--muted);margin-top:2px}
+.tgl{position:relative;width:46px;height:25px;flex-shrink:0}
+.tgl input{opacity:0;width:0;height:0;position:absolute}
+.tgl-slider{position:absolute;inset:0;background:#cbd5e0;border-radius:25px;cursor:pointer;transition:background .25s}
+.tgl-slider:before{content:"";position:absolute;width:19px;height:19px;left:3px;top:3px;background:#fff;border-radius:50%;transition:transform .25s;box-shadow:0 1px 4px rgba(0,0,0,.2)}
+.tgl input:checked + .tgl-slider{background:var(--red)}
+.tgl input:checked + .tgl-slider:before{transform:translateX(21px)}
+.acts{display:flex;gap:6px;flex-shrink:0}
+.ab{width:35px;height:35px;border-radius:9px;border:1px solid var(--border);background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s,border-color .15s}
+.ab:hover{background:#f5f7fa;border-color:#d1d7e0}
+.ab svg{width:16px;height:16px;fill:none;stroke:#636e72;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.ab.danger:hover{background:#fef2f2;border-color:#fecaca}
+.ab.danger:hover svg{stroke:#e74c3c}
+.empty{padding:60px 24px;text-align:center;color:var(--muted)}
+.empty svg{width:52px;height:52px;fill:none;stroke:var(--muted);opacity:.35;stroke-width:1.5;stroke-linecap:round;margin-bottom:12px}
+.empty p{font-size:14px}
+.overlay{position:fixed;inset:0;background:rgba(15,20,40,.5);backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;z-index:50;opacity:0;pointer-events:none;transition:opacity .2s}
+.overlay.show{opacity:1;pointer-events:all}
+.modal{background:#fff;border-radius:18px;padding:34px;width:100%;max-width:390px;box-shadow:0 24px 64px rgba(0,0,0,.22);transform:translateY(16px) scale(.97);transition:transform .22s}
+.overlay.show .modal{transform:none}
+.modal h3{font-size:18px;font-weight:700;margin-bottom:22px;color:var(--text)}
+.modal label{display:block;font-size:13px;color:#555;margin-bottom:6px;font-weight:500}
+.modal input[type=text]{width:100%;padding:11px 14px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:15px;outline:none;transition:border-color .2s}
+.modal input:focus{border-color:var(--red)}
+.mbts{display:flex;gap:10px;margin-top:22px}
+.mbts button{flex:1;padding:11px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;border:none}
+.btn-cancel{background:#f0f2f5;color:#555}
+.btn-cancel:hover{background:#e5e8ee}
+.btn-ok{background:linear-gradient(135deg,var(--red),var(--red2));color:#fff}
+.btn-ok:hover{opacity:.88}
+.qr-wrap{text-align:center;padding:16px 0}
+.qr-wrap svg,.qr-wrap img{max-width:210px;border-radius:10px}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">
+    <div class="logo-box">
+      <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+    </div>
+    <div>
+      <div class="logo-text">Vol WG Panel</div>
+      <span class="logo-sub">WireGuard VPN</span>
+    </div>
+  </div>
+  <div class="header-right">
+    <a class="logout" href="/logout">Logout</a>
+  </div>
+</header>
+
+<main>
+  <div class="stats">
+    <div class="stat"><div class="stat-val" id="s-total">-</div><div class="stat-label">Total Clients</div></div>
+    <div class="stat"><div class="stat-val" id="s-online">-</div><div class="stat-label">Active</div></div>
+  </div>
+
+  <div class="section">
+    <div class="section-head">
+      <span class="section-title">VPN Clients</span>
+      <button class="btn-new" onclick="openAdd()">
+        <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        New Client
+      </button>
+    </div>
+    <ul id="client-list"></ul>
+  </div>
+</main>
+
+<!-- Add modal -->
+<div class="overlay" id="m-add">
+  <div class="modal">
+    <h3>Add Client</h3>
+    <label>Device Name</label>
+    <input type="text" id="cname" placeholder="phone, laptop, office..." maxlength="64">
+    <div class="mbts">
+      <button class="btn-cancel" onclick="closeModal('m-add')">Cancel</button>
+      <button class="btn-ok" onclick="createClient()">Create</button>
+    </div>
+  </div>
+</div>
+
+<!-- QR modal -->
+<div class="overlay" id="m-qr">
+  <div class="modal" style="max-width:300px;text-align:center">
+    <h3 id="qr-name">QR Code</h3>
+    <div class="qr-wrap" id="qr-wrap"></div>
+    <div class="mbts"><button class="btn-cancel" style="flex:1" onclick="closeModal('m-qr')">Close</button></div>
+  </div>
+</div>
+
+<script>
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function closeModal(id){ document.getElementById(id).classList.remove('show'); }
+function openAdd(){ document.getElementById('m-add').classList.add('show'); setTimeout(()=>document.getElementById('cname').focus(),80); }
+document.querySelectorAll('.overlay').forEach(el => el.addEventListener('click', e=>{ if(e.target===el) el.classList.remove('show'); }));
+document.getElementById('cname').addEventListener('keydown', e=>{ if(e.key==='Enter') createClient(); });
+
+function timeAgo(ts){
+  if(!ts) return '';
+  const d = Math.floor((Date.now()-new Date(ts))/1000);
+  if(d<60) return 'just now';
+  if(d<3600) return Math.floor(d/60)+' min ago';
+  if(d<86400) return Math.floor(d/3600)+' h ago';
+  return Math.floor(d/86400)+' d ago';
+}
+
+async function load(){
+  try{
+    const r = await fetch('/api/clients');
+    const clients = await r.json();
+    if(!Array.isArray(clients)) return;
+    document.getElementById('s-total').textContent = clients.length;
+    document.getElementById('s-online').textContent = clients.filter(c=>c.endpoint).length;
+    const ul = document.getElementById('client-list');
+    if(!clients.length){
+      ul.innerHTML = '<li class="empty"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="5"/><path d="M3 21v-2a9 9 0 0 1 18 0v2"/></svg><p>No clients. Create the first one!</p></li>';
+      return;
+    }
+    ul.innerHTML = clients.map(c=>{
+      const ip = (c.allowedIPs&&c.allowedIPs[0]) || c.address || '-';
+      const online = !!c.endpoint;
+      const en = c.enabled !== false;
+      return `<li class="ci">
+        <div class="av">
+          <svg viewBox="0 0 24 24" fill="#636e72"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4S7.2 4.5 7.2 7.2S9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+          <span class="dot ${online?'on':''}"></span>
+        </div>
+        <div class="ci-info">
+          <div class="ci-name">${esc(c.name)}</div>
+          <div class="ci-meta">${ip}${c.latestHandshakeAt?' - '+timeAgo(c.latestHandshakeAt):''}</div>
+        </div>
+        <label class="tgl" title="${en?'Disable':'Enable'}">
+          <input type="checkbox" ${en?'checked':''} onchange="toggle('${c.id}',this.checked)">
+          <span class="tgl-slider"></span>
+        </label>
+        <div class="acts">
+          <button class="ab" title="QR Code" onclick="showQr('${c.id}','${esc(c.name)}')">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="17" width="2" height="4" rx=".5"/><rect x="17" y="13" width="4" height="2" rx=".5"/><rect x="19" y="17" width="2" height="4" rx=".5"/><rect x="17" y="19" width="4" height="2" rx=".5"/></svg>
+          </button>
+          <button class="ab" title="Download Config" onclick="dlConfig('${c.id}','${esc(c.name)}')">
+            <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          </button>
+          <button class="ab danger" title="Delete" onclick="del('${c.id}','${esc(c.name)}')">
+            <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+          </button>
+        </div>
+      </li>`;
+    }).join('');
+  } catch(e){ console.error(e); }
+}
+
+async function createClient(){
+  const name = document.getElementById('cname').value.trim();
+  if(!name) return;
+  await fetch('/api/clients',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});
+  document.getElementById('cname').value='';
+  closeModal('m-add');
+  load();
+}
+
+async function toggle(id, enable){
+  await fetch('/api/clients/'+id+'/'+(enable?'enable':'disable'),{method:'POST'});
+  load();
+}
+
+async function showQr(id, name){
+  document.getElementById('qr-name').textContent = name;
+  document.getElementById('qr-wrap').innerHTML = '<p style="padding:20px;color:#888">Loading...</p>';
+  document.getElementById('m-qr').classList.add('show');
+  const r = await fetch('/api/clients/'+id+'/qr');
+  document.getElementById('qr-wrap').innerHTML = await r.text();
+}
+
+function dlConfig(id, name){
+  const a = document.createElement('a');
+  a.href = '/api/clients/'+id+'/config';
+  a.download = name+'.conf';
+  a.click();
+}
+
+async function del(id, name){
+  if(!confirm('Delete client "'+name+'"?')) return;
+  await fetch('/api/clients/'+id,{method:'DELETE'});
+  load();
+}
+
+load();
+setInterval(load, 10000);
+</script>
+</body>
+</html>
