@@ -2,6 +2,7 @@
 const express  = require('express');
 const session  = require('express-session');
 const bcrypt   = require('bcryptjs');
+const https    = require('https');
 const http     = require('http');
 const fs       = require('fs');
 const path     = require('path');
@@ -12,6 +13,8 @@ const WG_HOST = '127.0.0.1';
 const WG_PORT = 3051;
 const PWFILE  = '/opt/vol-panel/.password';
 const HTML    = path.join(__dirname, 'panel.html');
+const CERT_KEY = '/opt/vol-panel/cert.key';
+const CERT_CRT = '/opt/vol-panel/cert.crt';
 
 const app = express();
 app.set('trust proxy', 1);
@@ -20,7 +23,7 @@ app.use(express.json());
 app.use(session({
   secret: crypto.randomBytes(32).toString('hex'),
   resave: false, saveUninitialized: false,
-  cookie: { httpOnly: true, maxAge: 86400000 }
+  cookie: { httpOnly: true, secure: fs.existsSync(CERT_KEY), maxAge: 86400000 }
 }));
 
 const hasPwd = () => fs.existsSync(PWFILE);
@@ -181,4 +184,11 @@ app.get('/api/clients/:id/config', auth, async (req, res) => {
 // ── Main panel ────────────────────────────────────────────────
 app.get('/', auth, (req, res) => res.sendFile(HTML));
 
-app.listen(PORT, () => console.log('[Vol WG Panel] http://0.0.0.0:'+PORT));
+// ── Start server (HTTPS if cert exists, else HTTP) ────────────
+const proto = fs.existsSync(CERT_KEY) && fs.existsSync(CERT_CRT) ? 'https' : 'http';
+if (proto === 'https') {
+  https.createServer({ key: fs.readFileSync(CERT_KEY), cert: fs.readFileSync(CERT_CRT) }, app)
+    .listen(PORT, () => console.log('[Vol WG Panel] https://0.0.0.0:' + PORT));
+} else {
+  http.createServer(app).listen(PORT, () => console.log('[Vol WG Panel] http://0.0.0.0:' + PORT));
+}
