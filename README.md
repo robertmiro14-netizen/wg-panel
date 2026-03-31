@@ -1,123 +1,114 @@
 # WireGuard VPN + Web Panel
 
-Automatic installer for WireGuard VPN with web control panel for Ubuntu 20.04 / 22.04 / 24.04.
+Automatic WireGuard VPN installer with web management panel for Ubuntu 20.04 / 22.04 / 24.04.
 
 ## Features
 
-- First run - set password directly in browser
-- - Client management - create and delete VPN users
-  - - QR code - scan in WireGuard app (iOS/Android)
-    - - Download config - ready-to-use .conf file for any device
-      - - Dashboard - server status, load, memory, uptime
-        - - WireGuard status - real-time wg show output
-          - - Restart WireGuard with one button
+- First launch: set your password directly in the browser
+- - Client management: create and delete VPN users
+  - - QR code: scan in the WireGuard app (iOS/Android)
+    - - Download config: ready .conf file for any device
+      - - Dashboard: server status, load, memory, uptime
+        - - WireGuard status: live wg show output
+          - - One-click WireGuard restart
            
             - ## Installation
            
-            - ### 1. Connect to server
+            - ### 1. Connect to your server
            
             - ```bash
               ssh root@your-server-ip
               ```
 
-              ### 2. Download and run script
+              ### 2. Download and run the script
 
               ```bash
               curl -O https://raw.githubusercontent.com/robertmiro14-netizen/wg-panel/main/install_wg_panel.sh
               sudo bash install_wg_panel.sh
               ```
 
-              > The script will automatically:
-              > > - Install WireGuard and all dependencies
-              > > - > - Install Node.js 20 LTS (if needed)
-              > >   > - > - Create server keys
-              > >   >   > - > - Run WireGuard and web panel as services
-              > >   >   >   > - > - Configure UFW (ports 51820/udp and 8080/tcp)
-              > >   >   >   >   >
-              > >   >   >   >   > - ### 3. Open panel in browser
-              > >   >   >   >   >
-              > >   >   >   >   > - After installation, open:
-              > >   >   >   >   >
-              > >   >   >   >   > - ```
-              > >   >   >   >   >   http://YOUR_SERVER_IP:8080
-              > >   >   >   >   >   ```
-              > >   >   >   >   >
-              > >   >   >   >   > On first login, you will be prompted to set a password (min 6 characters).
-              > >   >   >   >   >
-              > >   >   >   >   > ---
-              > >   >   >   >   >
-              > >   >   >   >   > ## How to add a client (VPN user)
-              > >   >   >   >   >
-              > >   >   >   >   > 1. Log in to panel -> Clients -> + Add client
-              > >   >   >   >   > 2. 2. Enter name (e.g., phone, laptop, office)
-              > >   >   >   >   >    3. 3. Click Create client
-              > >   >   >   >   >       4. 4. Scan QR code in WireGuard app or download .conf file
-              > >   >   >   >   >         
-              > >   >   >   >   >          5. ### WireGuard Apps:
-              > >   >   >   >   >          6. | Platform | Link |
-              > >   >   >   >   >          7. |-----------|--------|
-              > >   >   >   >   >          8. | iOS | [App Store](https://apps.apple.com/app/wireguard/id1441195209) |
-              > >   >   >   >   >          9. | Android | [Google Play](https://play.google.com/store/apps/details?id=com.wireguard.android) |
-              > >   >   >   >   >          10. | Windows | [Download](https://www.wireguard.com/install/) |
-              > >   >   >   >   >          11. | macOS | [App Store](https://apps.apple.com/app/wireguard/id1451685025) |
-              > >   >   >   >   >          12. | Linux | sudo apt install wireguard |
-              > >   >   >   >   >         
-              > >   >   >   >   >          13. ---
-              > >   >   >   >   >         
-              > >   >   >   >   >          14. ## Technical Details
-              > >   >   >   >   > 
-              | Parameter | Value |
-              |----------|----------|
-              | WireGuard port | 51820/udp |
-              | Web panel port | 51821/tcp |
-              | VPN subnet | 10.8.0.0/24 |
-              | DNS | 1.1.1.1, 8.8.8.8 |
-              | wg-easy data | /opt/wg-easy/ |
+              The script will automatically:
+              - Install Docker (if not present)
+              - - Enable IP forwarding
+                - - Configure UFW firewall
+                  - - Launch wg-easy as a Docker container
+                   
+                    - ### 3. Open the panel in your browser
+                   
+                    - After installation, open:
+                   
+                    - ```
+                      http://YOUR_SERVER_IP:51821
+                      ```
 
-              ---
+                      Enter the password you set during installation.
 
-              ## Management
+                      ---
 
-              ```bash
-              # Status
-              docker ps
+                      ## How to add a VPN client
 
-              # Real-time logs
-              docker logs -f wg-easy
+                      1. Log into the panel -> Clients -> + Add Client
+                      2. 2. Enter a name (e.g.: phone, laptop, office)
+                         3. 3. Click Create Client
+                            4. 4. Scan the QR code in the WireGuard app OR download the .conf file
+                              
+                               5. ### WireGuard apps:
+                               6. | Platform | Link |
+                               7. |----------|------|
+                               8. | iOS | App Store |
+                               9. | Android | Google Play |
+                               10. | Windows | wireguard.com/install |
+                               11. | macOS | App Store |
+                               12. | Linux | sudo apt install wireguard |
+                              
+                               13. ---
+                              
+                               14. ## Technical Details
+                              
+                               15. | Parameter | Value |
+                               16. |-----------|-------|
+                               17. | WireGuard port | 51820/udp |
+                               18. | Web panel port | 51821/tcp |
+                               19. | VPN subnet | 10.8.0.0/24 |
+                               20. | DNS | 1.1.1.1, 8.8.8.8 |
+                               21. | Data location | /opt/wg-easy/ |
+                              
+                               22. ---
+                              
+                               23. ## Management
+                              
+                               24. ```bash
+                                   # Status
+                                   docker ps
 
-              # Restart
-              docker restart wg-easy
+                                   # Live logs
+                                   docker logs -f wg-easy
 
-              # Update
-              docker pull ghcr.io/wg-easy/wg-easy && docker restart wg-easy
-              ```
+                                   # Restart
+                                   docker restart wg-easy
 
-              ---
+                                   # Update
+                                   docker pull ghcr.io/wg-easy/wg-easy && docker restart wg-easy
+                                   ```
 
-              ## Password Reset
+                                   ---
 
-              If you forgot your password, recreate the container with a new one:
+                                   ## Reset Password
 
-              ```bash
-              docker stop wg-easy
-              docker rm wg-easy
-              sudo bash install_wg_panel.sh
-              ```
+                                   If you forgot your password, recreate the container with a new password:
 
-              ---
+                                   ```bash
+                                   docker stop wg-easy
+                                   docker rm wg-easy
+                                   sudo bash install_wg_panel.sh
+                                   ```
 
-              ## Screenshots
+                                   ---
 
-              | First setup | Dashboard | Clients | QR Code |
-              |:---:|:---:|:---:|:---:|
-              | Set password | Server stats | User list | Scanning in WG |
+                                   ## Requirements
 
-              ---
-
-              ## Requirements
-
-              - Ubuntu 20.04 / 22.04 / 24.04
-              - - root access (or sudo)
-                - - Open ports: 51820/udp and 51821/tcp
-                  - - Min 512 MB RAM
-                    - 
+                                   - Ubuntu 20.04 / 22.04 / 24.04
+                                   - - Root access (or sudo)
+                                     - - Open ports: 51820/udp and 51821/tcp
+                                       - - Minimum 512 MB RAM
+                                         - 
