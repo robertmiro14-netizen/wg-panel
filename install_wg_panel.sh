@@ -88,7 +88,19 @@ success "Порты открыты: 22/tcp, ${WG_PORT}/udp, ${WEB_PORT}/tcp"
 mkdir -p /opt/wg-easy
 chmod 700 /opt/wg-easy
 
-# ─── 6. Запуск wg-easy ──────────────────────────────────────
+# ─── 6. Загрузка образа и генерация хеша пароля ────────────
+info "Загрузка образа wg-easy (это может занять минуту)..."
+docker pull ghcr.io/wg-easy/wg-easy > /dev/null 2>&1
+success "Образ загружен"
+
+info "Генерация хеша пароля..."
+PANEL_HASH=$(docker run --rm ghcr.io/wg-easy/wg-easy wgpw "${PANEL_PASS}" 2>/dev/null | sed "s/PASSWORD_HASH='//;s/'$//")
+if [[ -z "$PANEL_HASH" ]]; then
+    error "Не удалось сгенерировать хеш пароля. Проверьте работу Docker."
+fi
+success "Хеш сгенерирован"
+
+# ─── 7. Запуск wg-easy ──────────────────────────────────────
 info "Запуск wg-easy..."
 
 # Остановить и удалить старый контейнер если есть
@@ -99,7 +111,7 @@ docker run -d \
   --name=wg-easy \
   -e LANG=ru \
   -e WG_HOST="${SERVER_IP}" \
-  -e PASSWORD="${PANEL_PASS}" \
+  -e PASSWORD_HASH="${PANEL_HASH}" \
   -e WG_PORT=${WG_PORT} \
   -e WG_DEFAULT_DNS="1.1.1.1, 8.8.8.8" \
   -e WG_MTU=1420 \
@@ -119,7 +131,7 @@ docker run -d \
 
 sleep 3
 
-# ─── 7. Проверка ────────────────────────────────────────────
+# ─── 8. Проверка ────────────────────────────────────────────
 CONTAINER_ST=$(docker inspect -f '{{.State.Running}}' wg-easy 2>/dev/null || echo "false")
 
 echo ""
