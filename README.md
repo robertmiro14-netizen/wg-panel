@@ -1,124 +1,123 @@
-# ⚡ WireGuard VPN + Web Panel
+# WireGuard VPN + Web Panel
 
-Автоматический установщик WireGuard VPN с веб-панелью управления для Ubuntu 20.04 / 22.04 / 24.04.
+Automatic installer for WireGuard VPN with web control panel for Ubuntu 20.04 / 22.04 / 24.04.
 
-## ✨ Возможности
+## Features
 
-- 🔐 **Первый запуск** — установка пароля прямо в браузере
-- 👥 **Управление клиентами** — создание и удаление пользователей VPN
-- 📱 **QR-код** — сканируйте в приложении WireGuard (iOS/Android)
-- 📥 **Скачать конфиг** — готовый `.conf` файл для любого устройства
-- 📊 **Dashboard** — статус сервера, нагрузка, память, uptime
-- 📡 **Статус WireGuard** — вывод `wg show` в реальном времени
-- 🔄 **Перезапуск** WireGuard одной кнопкой
+- First run - set password directly in browser
+- - Client management - create and delete VPN users
+  - - QR code - scan in WireGuard app (iOS/Android)
+    - - Download config - ready-to-use .conf file for any device
+      - - Dashboard - server status, load, memory, uptime
+        - - WireGuard status - real-time wg show output
+          - - Restart WireGuard with one button
+           
+            - ## Installation
+           
+            - ### 1. Connect to server
+           
+            - ```bash
+              ssh root@your-server-ip
+              ```
 
-## 🚀 Установка
+              ### 2. Download and run script
 
-### 1. Подключитесь к серверу
+              ```bash
+              curl -O https://raw.githubusercontent.com/robertmiro14-netizen/wg-panel/main/install_wg_panel.sh
+              sudo bash install_wg_panel.sh
+              ```
 
-```bash
-ssh root@your-server-ip
-```
+              > The script will automatically:
+              > > - Install WireGuard and all dependencies
+              > > - > - Install Node.js 20 LTS (if needed)
+              > >   > - > - Create server keys
+              > >   >   > - > - Run WireGuard and web panel as services
+              > >   >   >   > - > - Configure UFW (ports 51820/udp and 8080/tcp)
+              > >   >   >   >   >
+              > >   >   >   >   > - ### 3. Open panel in browser
+              > >   >   >   >   >
+              > >   >   >   >   > - After installation, open:
+              > >   >   >   >   >
+              > >   >   >   >   > - ```
+              > >   >   >   >   >   http://YOUR_SERVER_IP:8080
+              > >   >   >   >   >   ```
+              > >   >   >   >   >
+              > >   >   >   >   > On first login, you will be prompted to set a password (min 6 characters).
+              > >   >   >   >   >
+              > >   >   >   >   > ---
+              > >   >   >   >   >
+              > >   >   >   >   > ## How to add a client (VPN user)
+              > >   >   >   >   >
+              > >   >   >   >   > 1. Log in to panel -> Clients -> + Add client
+              > >   >   >   >   > 2. 2. Enter name (e.g., phone, laptop, office)
+              > >   >   >   >   >    3. 3. Click Create client
+              > >   >   >   >   >       4. 4. Scan QR code in WireGuard app or download .conf file
+              > >   >   >   >   >         
+              > >   >   >   >   >          5. ### WireGuard Apps:
+              > >   >   >   >   >          6. | Platform | Link |
+              > >   >   >   >   >          7. |-----------|--------|
+              > >   >   >   >   >          8. | iOS | [App Store](https://apps.apple.com/app/wireguard/id1441195209) |
+              > >   >   >   >   >          9. | Android | [Google Play](https://play.google.com/store/apps/details?id=com.wireguard.android) |
+              > >   >   >   >   >          10. | Windows | [Download](https://www.wireguard.com/install/) |
+              > >   >   >   >   >          11. | macOS | [App Store](https://apps.apple.com/app/wireguard/id1451685025) |
+              > >   >   >   >   >          12. | Linux | sudo apt install wireguard |
+              > >   >   >   >   >         
+              > >   >   >   >   >          13. ---
+              > >   >   >   >   >         
+              > >   >   >   >   >          14. ## Technical Details
+              > >   >   >   >   > 
+              | Parameter | Value |
+              |----------|----------|
+              | WireGuard port | 51820/udp |
+              | Web panel port | 51821/tcp |
+              | VPN subnet | 10.8.0.0/24 |
+              | DNS | 1.1.1.1, 8.8.8.8 |
+              | wg-easy data | /opt/wg-easy/ |
 
-### 2. Скачайте и запустите скрипт
+              ---
 
-```bash
-curl -O https://raw.githubusercontent.com/robertmiro14-netizen/wg-panel/main/install_wg_panel.sh
-sudo bash install_wg_panel.sh
-```
+              ## Management
 
-> Скрипт автоматически:
-> - Установит WireGuard и все зависимости
-> - Установит Node.js 20 LTS (если нужно)
-> - Создаст ключи сервера
-> - Запустит WireGuard и веб-панель как systemd-сервисы
-> - Настроит UFW (порты 51820/udp и 8080/tcp)
+              ```bash
+              # Status
+              docker ps
 
-### 3. Откройте панель в браузере
+              # Real-time logs
+              docker logs -f wg-easy
 
-После установки откройте:
+              # Restart
+              docker restart wg-easy
 
-```
-http://YOUR_SERVER_IP:8080
-```
+              # Update
+              docker pull ghcr.io/wg-easy/wg-easy && docker restart wg-easy
+              ```
 
-При **первом входе** вам предложат установить пароль — введите любой (минимум 6 символов).
+              ---
 
----
+              ## Password Reset
 
-## 📱 Как добавить клиента (пользователя VPN)
+              If you forgot your password, recreate the container with a new one:
 
-1. Войдите в панель → **Клиенты** → **+ Добавить клиента**
-2. Введите имя (например: `phone`, `laptop`, `office`)
-3. Нажмите **Создать клиента**
-4. Отсканируйте QR-код в приложении WireGuard **или** скачайте `.conf` файл
+              ```bash
+              docker stop wg-easy
+              docker rm wg-easy
+              sudo bash install_wg_panel.sh
+              ```
 
-### Приложения WireGuard:
-| Платформа | Ссылка |
-|-----------|--------|
-| iOS | [App Store](https://apps.apple.com/app/wireguard/id1441195209) |
-| Android | [Google Play](https://play.google.com/store/apps/details?id=com.wireguard.android) |
-| Windows | [Download](https://www.wireguard.com/install/) |
-| macOS | [App Store](https://apps.apple.com/app/wireguard/id1451685025) |
-| Linux | `sudo apt install wireguard` |
+              ---
 
----
+              ## Screenshots
 
-## ⚙️ Технические детали
+              | First setup | Dashboard | Clients | QR Code |
+              |:---:|:---:|:---:|:---:|
+              | Set password | Server stats | User list | Scanning in WG |
 
-| Параметр | Значение |
-|----------|----------|
-| WireGuard порт | `51820/udp` |
-| Веб-панель порт | `8080/tcp` |
-| Подсеть VPN | `10.8.0.0/24` |
-| DNS | `1.1.1.1, 8.8.8.8` |
-| Панель расположена | `/opt/wg-panel/` |
-| Конфиги клиентов | `/etc/wireguard/clients/` |
+              ---
 
----
+              ## Requirements
 
-## 🛠️ Управление сервисами
-
-```bash
-# Статус
-systemctl status wg-panel
-systemctl status wg-quick@wg0
-
-# Логи в реальном времени
-journalctl -u wg-panel -f
-journalctl -u wg-quick@wg0 -f
-
-# Перезапуск
-systemctl restart wg-panel
-systemctl restart wg-quick@wg0
-```
-
----
-
-## 🔄 Сброс пароля
-
-Если забыли пароль — просто удалите файл пароля и перезайдите в браузер:
-
-```bash
-rm /opt/wg-panel/.password
-systemctl restart wg-panel
-```
-
-Откройте панель — снова появится форма установки пароля.
-
----
-
-## 🖥️ Скриншоты
-
-| Первая настройка | Dashboard | Клиенты | QR-код |
-|:---:|:---:|:---:|:---:|
-| Установка пароля | Статистика сервера | Список пользователей | Сканирование в WG |
-
----
-
-## 📋 Требования
-
-- Ubuntu **20.04 / 22.04 / 24.04**
-- Доступ **root** (или sudo)
-- Открытые порты: **51820/udp** и **8080/tcp**
-- Минимум **512 MB RAM**
+              - Ubuntu 20.04 / 22.04 / 24.04
+              - - root access (or sudo)
+                - - Open ports: 51820/udp and 51821/tcp
+                  - - Min 512 MB RAM
+                    - 
