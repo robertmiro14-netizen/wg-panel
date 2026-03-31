@@ -45,7 +45,7 @@ REPO_RAW="https://raw.githubusercontent.com/robertmiro14-netizen/wg-panel/main"
 # ─── 1. Системные пакеты ────────────────────────────────────
 info "Обновление пакетов..."
 apt update -qq
-apt install -y -qq curl ufw iptables 2>/dev/null || true
+apt install -y -qq curl ufw iptables openssl 2>/dev/null || true
 success "Пакеты готовы"
 
 # ─── 2. Node.js 20 LTS ──────────────────────────────────────
@@ -110,7 +110,18 @@ info "Установка npm зависимостей..."
 cd /opt/vol-panel && npm install --production --quiet 2>/dev/null
 success "Зависимости установлены"
 
-# ─── 7. Systemd сервис vol-panel ────────────────────────────
+# ─── 7. SSL сертификат (самоподписанный) ────────────────────
+info "Генерация SSL сертификата..."
+openssl req -x509 -nodes -newkey rsa:2048 \
+    -keyout /opt/vol-panel/cert.key \
+    -out    /opt/vol-panel/cert.crt \
+    -days 3650 \
+    -subj "/CN=${SERVER_IP}/O=Vol WG Panel/C=UA" \
+    >/dev/null 2>&1
+chmod 600 /opt/vol-panel/cert.key
+success "SSL сертификат создан (действителен 10 лет)"
+
+# ─── 8. Systemd сервис vol-panel ────────────────────────────
 # Используем printf вместо heredoc для совместимости с curl|bash
 printf '[Unit]\nDescription=Vol WG Panel\nAfter=network.target docker.service\nWants=docker.service\n\n[Service]\nType=simple\nWorkingDirectory=/opt/vol-panel\nExecStart=/usr/bin/node /opt/vol-panel/server.js\nRestart=always\nRestartSec=5\nEnvironment=NODE_ENV=production\n\n[Install]\nWantedBy=multi-user.target\n' \
     > /etc/systemd/system/vol-panel.service
@@ -171,12 +182,12 @@ echo ""
     && echo -e "  ${BOLD}wg-easy:${NC}          ${GREEN}● Работает${NC}" \
     || echo -e "  ${BOLD}wg-easy:${NC}          ${RED}● Ошибка${NC} (docker logs wg-easy)"
 echo ""
-echo -e "  ${BOLD}Веб-панель:${NC}  ${CYAN}http://${SERVER_IP}:${WEB_PORT}${NC}"
-echo -e "  ${YELLOW}★  При первом входе задайте пароль в браузере${NC}"
+echo -e "  ${BOLD}Веб-панель:${NC}  ${CYAN}https://${SERVER_IP}:${WEB_PORT}${NC}"
+  echo -e "  ${YELLOW}★  Браузер покажет предупреждение о сертификате — нажмите «Продолжить»${NC}"
+  echo -e "  ${YELLOW}★  При первом входе задайте пароль в браузере${NC}"
 echo ""
 echo -e "  ${CYAN}Логи панели:${NC}   journalctl -u vol-panel -f"
 echo -e "  ${CYAN}Логи wg-easy:${NC}  docker logs -f wg-easy"
 echo -e "  ${CYAN}Перезапуск:${NC}    systemctl restart vol-panel && docker restart wg-easy"
 echo ""
-echo -e "  Откройте: ${BOLD}http://${SERVER_IP}:${WEB_PORT}${NC}"
 echo ""
